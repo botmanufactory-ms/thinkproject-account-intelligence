@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thinkproject · Account Intelligence · Showpad eOS</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:#04090f;color:#dce8f5}
+:root{
+  --bg0:#04090f;--bg1:#07111f;--bg2:#0c1a2e;--bg3:#111f35;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --text:#dce8f5;--muted:#7a8ba0;--hint:#4a5f75;
+  --blue:#3b82f6;--blue2:#60a5fa;
+  --green:#10b981;--amber:#f59e0b;--red:#ef4444;--purple:#a78bfa;--orange:#f97316;
+}
+
+/* ── LAYOUT ── */
+.shell{display:flex;flex-direction:column;min-height:100vh}
+.topbar{display:flex;align-items:center;gap:12px;padding:11px 24px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0}
+.logo{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+.sep{width:1px;height:14px;background:var(--border2)}
+.topbar-title{font-size:13px;color:var(--text);font-weight:500}
+.topbar-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.chip{padding:3px 10px;border-radius:99px;font-size:10px;font-weight:600;border:1px solid;display:inline-flex;align-items:center;gap:5px}
+.chip-live{color:var(--green);border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.08)}
+.chip-live::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--green);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+.mainnav{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;overflow-x:auto;flex-shrink:0}
+.mnb{padding:10px 15px;font-size:11px;font-weight:700;color:rgba(255,255,255,.35);background:none;border:none;border-bottom:2.5px solid transparent;cursor:pointer;white-space:nowrap;transition:color .15s,border-color .15s,background .15s;letter-spacing:.06em;text-transform:uppercase}
+.mnb:hover{color:rgba(255,255,255,.7)}
+.mnb.on{color:var(--blue2);border-bottom-color:var(--blue);background:rgba(59,130,246,.05)}
+
+.main{flex:1;overflow-y:auto;padding:28px 24px}
+.sec{display:none;max-width:900px;margin:0 auto}.sec.on{display:block}
+
+/* ── TYPOGRAPHY ── */
+.hed{font-size:22px;font-weight:700;color:var(--text);margin-bottom:6px;line-height:1.2}
+.sub{font-size:13px;color:var(--muted);margin-bottom:22px;line-height:1.6;max-width:680px}
+
+/* ── GRIDS ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media(max-width:640px){.g2{grid-template-columns:1fr}.g3{grid-template-columns:1fr}.g4{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){.g4{grid-template-columns:1fr 1fr}}
+
+/* ── DEMO TABLE RESPONSIVE ── */
+.demo-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px}
+.demo-table-wrap .pt{min-width:560px}
+@media(max-width:600px){
+  .demo-ctrl{flex-direction:column;align-items:stretch}
+  .dsel,.dbtn{width:100%}
+}
+
+/* ── FUNNEL DIAGRAM ── */
+.funnel-wrap{margin-bottom:22px;user-select:none}
+
+/* Row 1: two source nodes side by side */
+.funnel-sources{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:480px;margin:0 auto 0}
+
+/* SVG convergence connector */
+.funnel-svg-row{width:100%;max-width:480px;margin:0 auto;display:block;overflow:visible}
+
+/* Row 2+: single center column */
+.funnel-center{display:flex;flex-direction:column;align-items:center;gap:0}
+.funnel-vline{width:2px;height:22px;background:var(--border2);margin:0 auto}
+.funnel-arr{
+  width:0;height:0;
+  border-left:6px solid transparent;border-right:6px solid transparent;
+  border-top:7px solid var(--border2);
+  margin:0 auto;
+}
+
+/* Shared node card */
+.fnode{
+  background:var(--bg2);border:1px solid var(--border);border-radius:10px;
+  padding:13px 10px 10px;text-align:center;
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  cursor:pointer;width:100%;position:relative;
+  transition:border-color .2s,background .2s,transform .18s,box-shadow .2s;
+}
+.fnode:hover{
+  border-color:var(--blue2);
+  background:var(--bg3);
+  transform:translateY(-3px);
+  box-shadow:0 6px 22px rgba(59,130,246,.15), 0 0 0 1px rgba(96,165,250,.18);
+}
+.fnode.active{
+  border-color:var(--blue);
+  background:rgba(59,130,246,.09);
+  box-shadow:0 0 0 2px rgba(59,130,246,.25);
+}
+.fnode-center{max-width:220px}
+.fnode-icon{font-size:22px;line-height:1}
+.fnode-label{font-size:12px;font-weight:700;color:var(--text);line-height:1.3}
+.fnode-sub{font-size:10px;color:var(--hint);line-height:1.3}
+.fnode-badge{
+  display:inline-block;padding:2px 6px;border-radius:3px;
+  font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-top:2px;
+}
+
+/* "Click for details" hint — appears on hover */
+.fnode-hint{
+  font-size:9px;color:var(--blue2);letter-spacing:.04em;text-transform:uppercase;
+  font-weight:700;margin-top:5px;opacity:0;
+  transition:opacity .18s;
+  display:flex;align-items:center;gap:3px;
+}
+.fnode-hint::before{content:'▸';font-size:9px}
+.fnode:hover .fnode-hint{opacity:1}
+.fnode.active .fnode-hint{opacity:0}
+
+/* Intro pulse: plays once on load to hint interactivity */
+@keyframes nodePulse{
+  0%{box-shadow:0 0 0 0 rgba(96,165,250,.35)}
+  60%{box-shadow:0 0 0 8px rgba(96,165,250,0)}
+  100%{box-shadow:0 0 0 0 rgba(96,165,250,0)}
+}
+.fnode-pulse{animation:nodePulse 1.2s ease forwards}
+.fb-ext{background:rgba(59,130,246,.14);color:var(--blue2)}
+.fb-int{background:rgba(16,185,129,.12);color:var(--green)}
+.fb-be{background:rgba(249,115,22,.14);color:var(--orange)}
+.fb-ai{background:rgba(139,92,246,.14);color:var(--purple)}
+.fb-sp{background:rgba(245,158,11,.14);color:var(--amber)}
+/* legacy compat aliases */
+.flow-box.active{border-color:var(--blue);background:rgba(59,130,246,.08)}
+
+/* ── CARDS ── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px}
+.card-sm{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px}
+.clabel{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--hint);margin-bottom:12px}
+
+/* ── STATS ── */
+.stat{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px}
+.sv{font-size:28px;font-weight:700;margin-bottom:4px;line-height:1}
+.sl{font-size:12px;color:var(--muted)}
+.ss{font-size:11px;color:var(--hint);margin-top:4px}
+.c-b{color:var(--blue2)}.c-g{color:var(--green)}.c-a{color:var(--amber)}.c-r{color:var(--red)}.c-p{color:var(--purple)}.c-o{color:var(--orange)}
+
+/* ── HIGHLIGHT BOX ── */
+.hl{border-left:2px solid var(--orange);padding:12px 15px;margin:16px 0;background:rgba(249,115,22,.05);border-radius:0 8px 8px 0}
+.hl p{font-size:13px;color:var(--text);line-height:1.55}
+.hl strong{color:var(--orange)}
+
+/* ── PRO/CON ── */
+.pvs{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+@media(max-width:540px){.pvs{grid-template-columns:1fr}}
+.pvs-bad{background:rgba(239,68,68,.04);border:1px solid rgba(239,68,68,.15);border-radius:12px;padding:18px}
+.pvs-good{background:rgba(16,185,129,.04);border:1px solid rgba(16,185,129,.15);border-radius:12px;padding:18px}
+.pvsh{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px}
+.pvs-bad .pvsh{color:rgba(239,68,68,.8)}.pvs-good .pvsh{color:rgba(16,185,129,.8)}
+.pvi{display:flex;gap:9px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px;color:var(--muted);line-height:1.4}
+.pvi:last-child{border-bottom:none}
+.pvi span{flex-shrink:0;font-size:13px;margin-top:1px}
+
+/* ── DATA SOURCES ── */
+.ds{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.ds:last-child{border-bottom:none}
+.ds-ic{width:36px;height:36px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px}
+.ds-ext{background:rgba(59,130,246,.12)}.ds-int{background:rgba(16,185,129,.1)}.ds-ai{background:rgba(139,92,246,.1)}
+.ds-n{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px}
+.ds-d{font-size:12px;color:var(--muted);line-height:1.4}
+.ds-tags{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap}
+.tag{display:inline-block;padding:2px 7px;border-radius:3px;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.t-ext{background:rgba(59,130,246,.12);color:var(--blue2)}
+.t-int{background:rgba(16,185,129,.1);color:var(--green)}
+.t-ai{background:rgba(139,92,246,.12);color:var(--purple)}
+
+/* ── ARCH FLOW ── */
+.arch{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:16px}
+.as{flex:1;min-width:95px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:13px 9px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
+.as:hover{border-color:var(--border2)}
+.as.on{border-color:var(--blue);background:rgba(59,130,246,.07)}
+.as.on .an{color:var(--blue2);border-color:var(--blue)}
+.an{width:22px;height:22px;border-radius:50%;border:1px solid var(--border2);font-size:10px;font-weight:700;color:var(--hint);display:flex;align-items:center;justify-content:center;margin:0 auto 9px}
+.al{font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px}
+.asub{font-size:11px;color:var(--hint)}
+.a-arr{display:flex;align-items:center;color:var(--hint);font-size:14px;flex-shrink:0;padding-top:4px}
+.ad{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;display:none;margin-bottom:16px;animation:fadeIn .2s ease}
+.ad.on{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.adp{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:var(--text);line-height:1.4}
+.adp:last-child{border-bottom:none}
+.adp-d{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:6px}
+.d-ext{background:var(--blue)}.d-int{background:var(--green)}.d-ai{background:var(--purple)}.d-sp{background:var(--amber)}
+.adn{font-size:11px;color:var(--hint);margin-top:2px}
+
+/* ── DEMO ── */
+.demo-ctrl{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+.dsel{padding:8px 12px;font-size:13px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);color:var(--text);cursor:pointer;outline:none}
+.dsel:focus{border-color:var(--blue)}
+.dbtn{display:inline-flex;align-items:center;gap:8px;padding:8px 18px;border-radius:8px;background:var(--blue);color:#fff;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:opacity .15s,background .15s}
+.dbtn:hover{opacity:.85}.dbtn:disabled{opacity:.4;cursor:default}
+.dspin{display:none;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading .dspin{display:block}
+.demo-out{display:none}.demo-out.on{display:block;animation:fadeIn .4s ease}
+
+/* ── BADGES ── */
+.dbadge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:3px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.db-ext{background:rgba(59,130,246,.12);color:var(--blue2)}
+.db-int{background:rgba(16,185,129,.1);color:var(--green)}
+.db-ai{background:rgba(139,92,246,.12);color:var(--purple)}
+
+/* ── TABLE ── */
+.pt{width:100%;border-collapse:collapse;font-size:12px}
+.pt th{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--hint);padding:8px 10px;border-bottom:1px solid var(--border);text-align:left;font-weight:700;white-space:nowrap}
+.pt td{padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.05);color:var(--text);vertical-align:middle}
+.pt tr:last-child td{border-bottom:none}
+.pt tr:hover td{background:rgba(255,255,255,.02)}
+.sb{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;white-space:nowrap}
+.sb-yes{background:rgba(16,185,129,.12);color:var(--green)}
+.sb-no{background:rgba(239,68,68,.1);color:var(--red)}
+.sb-part{background:rgba(245,158,11,.12);color:var(--amber)}
+.sb-act{background:rgba(59,130,246,.12);color:var(--blue2)}
+.sb-plan{background:rgba(139,92,246,.12);color:var(--purple)}
+
+/* ── INSIGHT BOX ── */
+.ib{background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.22);border-radius:10px;padding:14px 16px;margin:12px 0}
+.ib-l{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--purple);margin-bottom:6px}
+.ib-t{font-size:12px;color:var(--text);line-height:1.55}
+.ib-s{font-size:11px;color:var(--hint);margin-top:5px}
+
+/* ── QUESTION LIST ── */
+.qlist{display:flex;flex-direction:column;gap:7px}
+.qi{background:rgba(255,255,255,.03);border-radius:8px;padding:11px 14px;font-size:12px;color:var(--text);line-height:1.45;border-left:2px solid var(--blue)}
+
+/* ── SHOWPAD FEATURES ── */
+.sp-feat-g{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px}
+@media(max-width:540px){.sp-feat-g{grid-template-columns:1fr}}
+.sp-feat{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px}
+.sp-f-ic{font-size:20px;margin-bottom:8px}
+.sp-f-t{font-size:13px;font-weight:600;color:var(--text);margin-bottom:5px}
+.sp-f-d{font-size:12px;color:var(--muted);line-height:1.5}
+.sp-f-b{display:inline-block;margin-top:8px;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.sp-f-ai{background:rgba(139,92,246,.12);color:var(--purple)}
+.sp-f-core{background:rgba(16,185,129,.1);color:var(--green)}
+.sp-f-new{background:rgba(59,130,246,.12);color:var(--blue2)}
+
+/* ── PHASE TABS ── */
+.ph-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+@media(max-width:520px){.ph-tabs{grid-template-columns:1fr}}
+.ph-tab{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:border-color .15s,background .15s;text-align:left}
+.ph-tab:hover{border-color:var(--border2)}
+.ph-tab.on{border-color:var(--amber);background:rgba(245,158,11,.05)}
+.ph-t-ic{font-size:18px;margin-bottom:7px}
+.ph-t-t{font-size:13px;font-weight:600;color:var(--text)}
+.ph-t-s{font-size:11px;color:var(--hint);margin-top:3px}
+.ph-det{display:none}.ph-det.on{display:block;animation:fadeIn .2s ease}
+.ph-step{display:flex;gap:10px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.ph-step:last-child{border-bottom:none}
+.ph-num{width:22px;height:22px;border-radius:50%;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);color:var(--amber);font-size:10px;font-weight:700;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.ph-text{font-size:12px;color:var(--text);line-height:1.5;flex:1}
+.ph-note{font-size:11px;color:var(--hint);margin-top:3px}
+
+/* ── SHOWPAD MOCKUP ── */
+.mkup-wrap{background:var(--bg3);border:1px solid rgba(255,255,255,.1);border-radius:14px;overflow:hidden;margin-top:14px}
+.mkup-bar{font-size:10px;color:var(--hint);padding:8px 16px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+.mkup-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 2s infinite}
+.sp-header{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--bg2);border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px}
+.sp-av{width:24px;height:24px;border-radius:5px;background:rgba(59,130,246,.2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--blue2);flex-shrink:0}
+.sp-acct-name{font-size:13px;font-weight:700;color:var(--text)}
+.sp-acct-meta{font-size:11px;color:var(--hint)}
+.sp-hd-right{margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.sp-badge{padding:3px 9px;border-radius:4px;font-size:10px;font-weight:600;display:inline-flex;align-items:center;gap:4px}
+.sp-b-live{background:rgba(16,185,129,.12);color:var(--green)}
+.sp-b-trk{background:rgba(245,158,11,.12);color:var(--amber)}
+.sp-b-trk::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--amber);animation:blink 2s infinite}
+.sp-tabs-row{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);padding:0 16px;overflow-x:auto;gap:2px}
+.spt{padding:9px 13px;font-size:11px;font-weight:700;color:var(--hint);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:color .12s,border-color .12s;text-transform:uppercase;letter-spacing:.05em}
+.spt:hover{color:var(--muted)}
+.spt.on{color:var(--blue2);border-bottom-color:var(--blue)}
+.sp-body{padding:16px}
+.sp-tab-c{display:none}.sp-tab-c.on{display:block;animation:fadeIn .2s ease}
+
+/* ── SHOWPAD INNER COMPONENTS ── */
+.sp-banner{background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.18);border-radius:8px;padding:10px 13px;margin-bottom:14px}
+.sp-b-txt{font-size:12px;color:#93c5fd;line-height:1.4}
+.sp-b-src{font-size:10px;color:var(--blue2);opacity:.7;margin-top:4px}
+.sp-mini-g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:14px}
+@media(max-width:460px){.sp-mini-g{grid-template-columns:repeat(2,1fr)}}
+.sp-mini{background:var(--bg3);border-radius:8px;padding:10px;text-align:center}
+.sp-mini-v{font-size:22px;font-weight:700;margin-bottom:3px}
+.sp-mini-l{font-size:10px;color:var(--hint);line-height:1.3}
+.sp-section-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--hint);margin:0 0 9px}
+.sp-agenda{display:flex;flex-direction:column;gap:5px}
+.sp-ag-item{display:flex;gap:9px;align-items:center;padding:7px 10px;background:var(--bg3);border-radius:7px;font-size:12px;color:var(--text)}
+.sp-ag-num{font-size:11px;color:var(--blue2);font-weight:700;flex-shrink:0;width:16px}
+
+/* project rows in mockup */
+.pr{display:flex;align-items:center;gap:9px;padding:10px 11px;border:1px solid var(--border);border-radius:8px;margin-bottom:5px;cursor:pointer;transition:background .12s,border-color .12s}
+.pr:hover{background:rgba(255,255,255,.02)}
+.pr.sel{border-color:var(--blue);background:rgba(59,130,246,.06)}
+.pr-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.pr-dot-yes{background:var(--green)}.pr-dot-part{background:var(--amber)}.pr-dot-no{background:var(--red)}
+.pr-name{font-size:12px;font-weight:600;color:var(--text);flex:1;min-width:0}
+.pr-meta{font-size:11px;color:var(--hint);margin-top:1px}
+.pr-badge{padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;flex-shrink:0;white-space:nowrap}
+.prb-no{background:rgba(239,68,68,.1);color:var(--red)}
+.prb-part{background:rgba(245,158,11,.12);color:var(--amber)}
+.prb-yes{background:rgba(16,185,129,.12);color:var(--green)}
+.pr-detail{background:var(--bg3);border-radius:8px;padding:12px 14px;margin-bottom:6px;display:none}
+.pr-detail.open{display:block;animation:fadeIn .15s ease}
+.prd-row{display:flex;justify-content:space-between;gap:8px;margin-bottom:5px}
+.prd-k{font-size:11px;color:var(--hint)}
+.prd-v{font-size:11px;color:var(--text);font-weight:600;text-align:right}
+.prd-q{margin-top:9px;padding:9px 11px;background:var(--bg2);border-left:2px solid var(--blue);border-radius:0 6px 6px 0;font-size:12px;color:#93c5fd;line-height:1.4}
+.prd-ql{font-size:10px;color:var(--blue2);opacity:.8;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em}
+.pr-more-hint{font-size:11px;color:var(--hint);padding:8px 0;border-top:1px solid var(--border);margin-top:4px}
+
+/* gaps */
+.gap-list{display:flex;flex-direction:column;gap:8px}
+.gap-item{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 14px}
+.gap-item.crit{border-left:2px solid var(--red);border-radius:0 8px 8px 0}
+.gap-item.med{border-left:2px solid var(--amber);border-radius:0 8px 8px 0}
+.gap-item.info{border-left:2px solid var(--blue);border-radius:0 8px 8px 0}
+.gap-top{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.gap-mod{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700}
+.gap-cnt{margin-left:auto;font-size:11px;color:var(--hint)}
+.gap-d{font-size:12px;color:var(--muted);line-height:1.4}
+
+/* content cards */
+.cc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:14px}
+.cc{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:11px;cursor:pointer;transition:border-color .12s}
+.cc:hover,.cc.rec{border-color:rgba(59,130,246,.35)}
+.cc-type{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--hint);margin-bottom:4px}
+.cc-name{font-size:11px;font-weight:600;color:var(--text);line-height:1.35;margin-bottom:6px}
+.cc-ch{display:inline-block;padding:2px 6px;border-radius:3px;font-size:9px;font-weight:700}
+.cc-rec{background:rgba(16,185,129,.1);color:var(--green)}
+.cc-avail{background:rgba(59,130,246,.1);color:var(--blue2)}
+
+/* engagement bars */
+.eng{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.eng:last-child{border-bottom:none}
+.eng-l{font-size:12px;color:var(--text);flex:1}
+.eng-bar{height:4px;border-radius:2px;background:rgba(255,255,255,.07);overflow:hidden;width:80px;flex-shrink:0}
+.eng-fill{height:100%;border-radius:2px;background:var(--blue)}
+.eng-v{font-size:11px;color:var(--hint);width:28px;text-align:right;flex-shrink:0}
+
+/* questions */
+.q-list{display:flex;flex-direction:column;gap:7px}
+.q-item{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:11px 12px;display:flex;gap:9px;transition:opacity .2s}
+.q-item.done{opacity:.35}
+.q-num{width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid var(--border2);font-size:10px;font-weight:700;color:var(--muted);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.q-text{font-size:12px;color:var(--text);line-height:1.45;flex:1}
+.q-src{font-size:10px;color:var(--hint);margin-top:3px}
+.q-btn{font-size:10px;color:var(--muted);padding:3px 8px;border:1px solid var(--border2);border-radius:4px;background:none;cursor:pointer;flex-shrink:0;margin-top:1px;transition:background .12s}
+.q-btn:hover{background:rgba(255,255,255,.06)}
+
+/* notes */
+.notes-ta{width:100%;min-height:90px;resize:vertical;font-size:12px;color:var(--text);background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;font-family:inherit;line-height:1.6;outline:none}
+.notes-ta:focus{border-color:var(--blue)}
+.ns-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--hint);margin-bottom:8px}
+.ns-check{display:flex;gap:9px;align-items:flex-start;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.ns-check:last-child{border-bottom:none}
+.ns-check input[type=checkbox]{margin-top:2px;flex-shrink:0;accent-color:var(--blue)}
+.ns-check-t{font-size:12px;color:var(--text);line-height:1.4}
+
+/* ROI */
+.roi-table{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px}
+.roi-row{display:grid;grid-template-columns:2fr 1fr 1fr}
+.roi-th{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--hint);padding:10px 14px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--border);font-weight:700}
+.roi-td{padding:11px 14px;font-size:12px;color:var(--text);border-bottom:1px solid rgba(255,255,255,.05)}
+.roi-td.dim{color:var(--hint)}
+.roi-td.pos{color:var(--green);font-weight:600}
+.roi-row:last-child .roi-td{border-bottom:none}
+
+.cav{background:rgba(245,158,11,.04);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:14px 16px;margin-bottom:16px}
+.cav-h{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--amber);margin-bottom:6px}
+.cav-t{font-size:12px;color:var(--muted);line-height:1.6}
+
+/* ── DIVIDER ── */
+.div16{height:1px;background:var(--border);margin:16px 0}
+.div20{height:1px;background:var(--border);margin:20px 0}
+
+/* ── LEGEND ── */
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+.leg-i{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+.leg-d{width:8px;height:8px;border-radius:50%}
+
+/* ── MEETING TYPE BADGE ── */
+.mt-badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;margin-left:8px}
+.mt-qbr{background:rgba(59,130,246,.15);color:var(--blue2)}
+.mt-exec{background:rgba(139,92,246,.15);color:var(--purple)}
+.mt-newbiz{background:rgba(16,185,129,.15);color:var(--green)}
+
+/* NB indicator dot on tab */
+.spt-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--amber);margin-left:4px;vertical-align:middle}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <span class="logo">Thinkproject</span>
+    <div class="sep"></div>
+    <span class="topbar-title">Account Intelligence · Showpad eOS</span>
+    <div class="topbar-right">
+      <span class="chip chip-live">Live Konzept</span>
+    </div>
+  </div>
+
+  <!-- MAIN NAV -->
+  <div class="mainnav">
+    <button class="mnb on" onclick="go('problem',this)">Das Problem</button>
+    <button class="mnb" onclick="go('data',this)">Datenquellen</button>
+    <button class="mnb" onclick="go('arch',this)">Architektur</button>
+    <button class="mnb" onclick="go('demo',this)">Live Demo</button>
+    <button class="mnb" onclick="go('showpad',this)">Showpad eOS</button>
+    <button class="mnb" onclick="go('roi',this)">Mehrwert</button>
+  </div>
+
+  <div class="main">
+
+    <!-- ══════════════════════════════
+         1. DAS PROBLEM
+    ══════════════════════════════ -->
+    <div id="sec-problem" class="sec on">
+      <div class="hed">Der blinde Fleck im Account Management</div>
+      <div class="sub">AEs verlassen sich heute auf persönliche Beziehung und manuelle Recherche. Verlässliche Echtzeit-Signale von außen fehlen vollständig — welche Projekte der Kunde baut, plant und investiert, ist ohne externe Datenquellen schlicht nicht sichtbar.</div>
+
+      <div class="pvs">
+        <div class="pvs-bad">
+          <div class="pvsh">Status quo — heute</div>
+          <div class="pvi"><span>⚠</span><div>AE verlässt sich auf Bauchgefühl und Beziehungshistorie</div></div>
+          <div class="pvi"><span>⚠</span><div>Neue Bauvorhaben bleiben unsichtbar, bis der Kunde sie erwähnt</div></div>
+          <div class="pvi"><span>⚠</span><div>Keine API-Anbindung an externe Bau- und Investitionssignale</div></div>
+          <div class="pvi"><span>⚠</span><div>Interne Nutzungsdaten werden nicht mit externen Signalen abgeglichen</div></div>
+          <div class="pvi"><span>⚠</span><div>Upsell-Gespräch reaktiv: Kunde muss Bedarf selbst formulieren</div></div>
+        </div>
+        <div class="pvs-good">
+          <div class="pvsh">Zielzustand — mit System</div>
+          <div class="pvi"><span>✓</span><div>Externe APIs liefern automatisch aktuelle Projektlage je Account</div></div>
+          <div class="pvi"><span>✓</span><div>Interne Nutzungsdaten zeigen, welche Module noch fehlen</div></div>
+          <div class="pvi"><span>✓</span><div>KI verdichtet beide Welten zu einem konkreten Briefing</div></div>
+          <div class="pvi"><span>✓</span><div>Showpad eOS macht das Briefing zur erlebbaren AE-Experience</div></div>
+          <div class="pvi"><span>✓</span><div>AE geht proaktiv rein — mit Fakten, nicht mit Vermutungen</div></div>
+        </div>
+      </div>
+
+      <div class="hl">
+        <p><strong>Die entscheidende Verschiebung:</strong> Es geht nicht um Zeitersparnis. Ein AE, der weiß dass Bosch gerade ein 450-Mio-€-Batteriewerk baut, führt ein fundamental anderes Gespräch als einer, der es nicht weiß.</p>
+      </div>
+
+      <div class="g4" style="margin-top:20px">
+        <div class="stat"><div class="sv c-a">0</div><div class="sl">externe Quellen heute</div><div class="ss">Recherche manuell, lückenhaft</div></div>
+        <div class="stat"><div class="sv c-b">2</div><div class="sl">Externe Bau-APIs (DACH)</div><div class="ss">DTAD REST API · Building Radar API</div></div>
+        <div class="stat"><div class="sv c-r">blind</div><div class="sl">Kundenprojekte heute</div><div class="ss">ohne externen Datenfeed</div></div>
+        <div class="stat"><div class="sv c-g">live</div><div class="sl">mit System</div><div class="ss">abrufbar vor jedem Termin</div></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         2. DATENQUELLEN
+    ══════════════════════════════ -->
+    <div id="sec-data" class="sec">
+      <div class="hed">Zwei Datenwelten — erst zusammen wertvoll</div>
+      <div class="sub">Der Durchbruch liegt im Abgleich: externe Bauprojekte des Kunden gegenüber seiner aktuellen Thinkproject-Nutzung. Diese Lücke ist das Gespräch.</div>
+
+      <div class="g2">
+        <div class="card">
+          <div class="clabel" style="color:var(--blue2)">Extern — Baumarktdaten (heute ungenutzt)</div>
+          <div class="ds"><div class="ds-ic ds-ext">🏗</div><div><div class="ds-n">DTAD REST API</div><div class="ds-d">Bauvorhaben DE/DACH — Bauherr/Firmenname-Suche, Phase, Projekttyp, Standort, Beteiligte. Dokumentierte API mit Key-Auth.</div><div class="ds-tags"><span class="tag t-ext">REST API</span><span class="tag t-ext">DE/AT/CH</span></div></div></div>
+          <div class="ds"><div class="ds-ic ds-ext">📋</div><div><div class="ds-n">DTAD</div><div class="ds-d">35.000+ Bauvorhaben DACH, Ausschreibungen, CRM-Anbindung</div><div class="ds-tags"><span class="tag t-ext">API</span><span class="tag t-ext">DACH</span></div></div></div>
+          <div class="ds"><div class="ds-ic ds-ext">📡</div><div><div class="ds-n">Building Radar</div><div class="ds-d">KI-Früherkennung von Neubauprojekten — erkennt frühe Planungsphase</div><div class="ds-tags"><span class="tag t-ext">API</span><span class="tag t-ext">Global</span></div></div></div>
+          <div class="ds"><div class="ds-ic ds-ext">🇦🇹</div><div><div class="ds-n">DOCUmedia / ausschreibung.at / simap.ch</div><div class="ds-d">Österreich und Schweiz: Ausschreibungen, Bauvorhaben, Auftraggeber</div><div class="ds-tags"><span class="tag t-ext">API</span><span class="tag t-ext">AT/CH</span></div></div></div>
+        </div>
+        <div class="card">
+          <div class="clabel" style="color:var(--green)">Intern — Thinkproject-eigene Daten</div>
+          <div class="ds"><div class="ds-ic ds-int">🏢</div><div><div class="ds-n">Thinkproject Platform API</div><div class="ds-d">Welche Module aktiv — CDE, Quality &amp; Safety, Cost &amp; Contract, Handover</div><div class="ds-tags"><span class="tag t-int">Intern</span></div></div></div>
+          <div class="ds"><div class="ds-ic ds-int">📊</div><div><div class="ds-n">Usage Analytics</div><div class="ds-d">Nutzungsintensität je Modul und Projekt — White Spaces sofort sichtbar</div><div class="ds-tags"><span class="tag t-int">Intern</span></div></div></div>
+          <div class="ds"><div class="ds-ic ds-int">💰</div><div><div class="ds-n">CRM (HubSpot / Salesforce)</div><div class="ds-d">ARR, Vertragslaufzeit, letzte Interaktionen, offene Opportunities</div><div class="ds-tags"><span class="tag t-int">Intern</span></div></div></div>
+          <div class="ds"><div class="ds-ic ds-ai">🤖</div><div><div class="ds-n">OpenAI Briefing-Layer</div><div class="ds-d">Verdichtet extern + intern zu Briefing, Hypothesen und Discovery-Fragen</div><div class="ds-tags"><span class="tag t-ai">KI</span></div></div></div>
+        </div>
+      </div>
+
+      <div class="hl">
+        <p><strong>Kernlogik:</strong> „Bosch baut für 450 Mio € ein Batteriewerk in Salzgitter — kein Q&amp;S-Modul aktiv." Diese Aussage ist ohne externen Datenfeed schlicht nicht möglich.</p>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         3. ARCHITEKTUR
+    ══════════════════════════════ -->
+    <div id="sec-arch" class="sec">
+      <div class="hed">So fließen die Daten</div>
+      <div class="sub">Fünf Stufen vom Rohsignal zum Meeting-Briefing. <strong style="color:var(--blue2)">Klicke auf jeden Schritt</strong> für Details.</div>
+
+      <!-- Funnel diagram: two sources merge into backend, then vertical stack -->
+      <div class="funnel-wrap">
+
+        <!-- Row 1: two sources -->
+        <div class="funnel-sources">
+          <div class="fnode" id="fb0" onclick="setArch(0)">
+            <div class="fnode-icon">🌐</div>
+            <div class="fnode-label">Externe APIs</div>
+            <div class="fnode-sub">DTAD REST API · Building Radar API</div>
+            <span class="fnode-badge fb-ext">API</span>
+            <span class="fnode-hint">Details anzeigen</span>
+          </div>
+          <div class="fnode" id="fb1" onclick="setArch(1)">
+            <div class="fnode-icon">🏢</div>
+            <div class="fnode-label">Interne APIs</div>
+            <div class="fnode-sub">TP Platform · CRM</div>
+            <span class="fnode-badge fb-int">Intern</span>
+            <span class="fnode-hint">Details anzeigen</span>
+          </div>
+        </div>
+
+        <!-- SVG converging lines (two curves meeting at center) -->
+        <svg class="funnel-svg-row" height="48" viewBox="0 0 480 48" preserveAspectRatio="none">
+          <!-- left branch -->
+          <path d="M 120 0 C 120 30, 240 20, 240 48" stroke="rgba(255,255,255,0.13)" stroke-width="2" fill="none"/>
+          <!-- right branch -->
+          <path d="M 360 0 C 360 30, 240 20, 240 48" stroke="rgba(255,255,255,0.13)" stroke-width="2" fill="none"/>
+          <!-- center arrowhead -->
+          <polygon points="234,43 246,43 240,48" fill="rgba(255,255,255,0.13)"/>
+        </svg>
+
+        <!-- Row 2+: centered vertical stack -->
+        <div class="funnel-center">
+          <div class="fnode fnode-center active" id="fb2" onclick="setArch(2)">
+            <div class="fnode-icon">⚙️</div>
+            <div class="fnode-label">Backend</div>
+            <div class="fnode-sub">Matching · Gap-Logik · Azure DE (DSGVO)</div>
+            <span class="fnode-badge fb-be">Azure DE</span>
+            <span class="fnode-hint">Details anzeigen</span>
+          </div>
+          <div class="funnel-vline"></div>
+          <div class="funnel-arr"></div>
+          <div class="funnel-vline"></div>
+          <div class="fnode fnode-center" id="fb3" onclick="setArch(3)">
+            <div class="fnode-icon">🤖</div>
+            <div class="fnode-label">OpenAI</div>
+            <div class="fnode-sub">Briefing-Generator</div>
+            <span class="fnode-badge fb-ai">KI</span>
+            <span class="fnode-hint">Details anzeigen</span>
+          </div>
+          <div class="funnel-vline"></div>
+          <div class="funnel-arr"></div>
+          <div class="funnel-vline"></div>
+          <div class="fnode fnode-center" id="fb4" onclick="setArch(4)">
+            <div class="fnode-icon">🎯</div>
+            <div class="fnode-label">Showpad eOS</div>
+            <div class="fnode-sub">AE-Interface · Enablement Platform</div>
+            <span class="fnode-badge fb-sp">Enablement</span>
+            <span class="fnode-hint">Details anzeigen</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Legacy clickable steps (hidden, kept for JS compat) -->
+      <div class="arch" style="display:none">
+        <div class="as on" id="as0" onclick="setArch(0)"><div class="an">1</div><div class="al">Externe APIs</div><div class="asub">DTAD, Building Radar</div></div>
+        <div class="a-arr">→</div>
+        <div class="as" id="as1" onclick="setArch(1)"><div class="an">2</div><div class="al">Interne APIs</div><div class="asub">TP + CRM</div></div>
+        <div class="a-arr">→</div>
+        <div class="as" id="as2" onclick="setArch(2)"><div class="an">3</div><div class="al">Backend</div><div class="asub">Matching + Gap</div></div>
+        <div class="a-arr">→</div>
+        <div class="as" id="as3" onclick="setArch(3)"><div class="an">4</div><div class="al">OpenAI</div><div class="asub">Briefing-Gen</div></div>
+        <div class="a-arr">→</div>
+        <div class="as" id="as4" onclick="setArch(4)"><div class="an">5</div><div class="al">Showpad eOS</div><div class="asub">AE-Interface</div></div>
+      </div>
+
+      <div id="ad0" class="ad on">
+        <div class="clabel" style="color:var(--blue2);margin-bottom:10px">Schritt 1 — Externe Bau-APIs</div>
+        <div class="adp"><div class="adp-d d-ext"></div><div><div>Bauvorhaben-Matching nach Firmenname (z.B. „Bosch GmbH")</div><div class="adn">DTAD REST API (Key-Auth) · Building Radar API — beide mit dokumentierter Bauherr/Firmen-Suche</div></div></div>
+        <div class="adp"><div class="adp-d d-ext"></div><div><div>Projektphase, Volumen, Standort, Projekttyp, Beteiligte</div><div class="adn">Basis für Upsell-Relevanz-Einschätzung</div></div></div>
+        <div class="adp"><div class="adp-d d-ext"></div><div><div>Zeitplan und Fertigstellungshorizont — Handover-Relevanz erkennbar</div></div></div>
+        <div class="adp"><div class="adp-d d-ext"></div><div><div>Regulatorisches Umfeld erkennbar: Batteriewerk → hohe Q&amp;S-Anforderungen</div></div></div>
+      </div>
+      <div id="ad1" class="ad">
+        <div class="clabel" style="color:var(--green);margin-bottom:10px">Schritt 2 — Interne Daten</div>
+        <div class="adp"><div class="adp-d d-int"></div><div><div>Welche Module lizenziert und aktiv je Kunde?</div><div class="adn">Thinkproject Platform API</div></div></div>
+        <div class="adp"><div class="adp-d d-int"></div><div><div>Auf wie vielen Projekten wird Thinkproject tatsächlich eingesetzt?</div></div></div>
+        <div class="adp"><div class="adp-d d-int"></div><div><div>ARR, Vertragslaufzeit, letzte Kontakthistorie aus CRM</div></div></div>
+      </div>
+      <div id="ad2" class="ad">
+        <div class="clabel" style="color:var(--orange);margin-bottom:10px">Schritt 3 — Backend: die entscheidende Logik</div>
+        <div class="adp"><div class="adp-d d-ai"></div><div><div>Abgleich: externe Bauvorhaben ↔ intern erfasste TP-Projekte</div><div class="adn">„12 erkannt — 3 aktiv" = White Space</div></div></div>
+        <div class="adp"><div class="adp-d d-ai"></div><div><div>Modul-Gap-Erkennung: welches Modul fehlt bei welchem Projekttyp?</div></div></div>
+        <div class="adp"><div class="adp-d d-ai"></div><div><div>EU-gehostet (Azure DE) — DSGVO-konform</div></div></div>
+      </div>
+      <div id="ad3" class="ad">
+        <div class="clabel" style="color:var(--purple);margin-bottom:10px">Schritt 4 — OpenAI Briefing-Generator</div>
+        <div class="adp"><div class="adp-d d-ai"></div><div><div>Strukturiertes Kunden-Briefing: Kontext, Projekte, Nutzungslücken</div></div></div>
+        <div class="adp"><div class="adp-d d-ai"></div><div><div>Konkrete, projektbezogene Upsell-Hypothesen mit Begründung</div></div></div>
+        <div class="adp"><div class="adp-d d-ai"></div><div><div>Discovery-Fragen aus der Datenlage — je nach Projekttyp und Meeting-Typ angepasst</div></div></div>
+      </div>
+      <div id="ad4" class="ad">
+        <div class="clabel" style="color:var(--amber);margin-bottom:10px">Schritt 5 — Showpad eOS: das einzige Interface des AE</div>
+        <div class="adp"><div class="adp-d d-sp"></div><div><div>Briefing als <strong>Custom Showpad App v2</strong> direkt im eOS gerendert</div><div class="adn">Showpad Apps SDK (HTML/JS) · deployed über Showpad Developer Portal</div></div></div>
+        <div class="adp"><div class="adp-d d-sp"></div><div><div>Guided Selling zeigt automatisch passende Content-Empfehlungen — getriggert by CRM-Felder via <code style="font-size:10px;color:var(--hint)">v4/crm/recommendations/rules</code></div></div></div>
+        <div class="adp"><div class="adp-d d-sp"></div><div><div>Guided Selling: passende Case Studies und Decks automatisch empfohlen</div></div></div>
+        <div class="adp"><div class="adp-d d-sp"></div><div><div>Buyer Engagement Analytics trackt automatisch was der Kunde sieht — im Meeting und im Follow-up Shared Space Link</div></div></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         4. BOSCH DEMO
+    ══════════════════════════════ -->
+    <div id="sec-demo" class="sec">
+      <div class="hed">Account Intelligence — Demo</div>
+      <div class="sub">Wähle Account und Meeting-Typ. Die Daten, Fragen und Lückenanalyse passen sich dynamisch an.</div>
+
+      <div class="demo-ctrl">
+        <select class="dsel" id="demo-account" onchange="resetDemo()">
+          <option value="bosch">Robert Bosch GmbH</option>
+          <option value="hochtief">HOCHTIEF AG</option>
+        </select>
+        <select class="dsel" id="demo-mtype" onchange="resetDemo()">
+          <option value="qbr">QBR — Quarterly Business Review</option>
+          <option value="exec">Executive Review</option>
+          <option value="newbiz">New Business</option>
+        </select>
+        <button class="dbtn" id="gbtn" onclick="runDemo()">
+          <div class="dspin" id="gspin"></div>
+          <span id="gbtn-l">Intelligence laden</span>
+        </button>
+      </div>
+
+      <div id="demo-out" class="demo-out">
+
+        <!-- Account header -->
+        <div id="demo-acct-header" style="display:flex;align-items:center;gap:12px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--border)">
+          <div id="demo-logo" style="width:42px;height:42px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px">🏭</div>
+          <div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span id="demo-acct-name" style="font-size:16px;font-weight:700;color:var(--text)">Robert Bosch GmbH</span>
+              <span id="demo-mt-badge" class="mt-badge mt-qbr">QBR</span>
+            </div>
+          <div id="demo-acct-sub" style="font-size:11px;color:var(--hint);margin-top:3px">Bestandskunde · Daten: DTAD API + Building Radar + TP Platform API + CRM</div>
+            <div id="demo-crm-row" style="display:flex;gap:14px;margin-top:6px;flex-wrap:wrap"></div>
+          </div>
+          <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
+            <span class="dbadge db-ext">DTAD + Building Radar API</span>
+            <span class="dbadge db-int">TP API</span>
+            <span class="dbadge db-ai">KI-Briefing</span>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="g4" id="demo-stats" style="margin-bottom:18px"></div>
+
+        <!-- Context / framing box -->
+        <div id="demo-context-box" class="ib" style="margin-bottom:16px"></div>
+
+        <!-- Projects table -->
+        <div class="card" style="margin-bottom:14px">
+          <div class="clabel" style="color:var(--blue2)" id="demo-table-title">Extern sichtbare Bauvorhaben (DTAD + Building Radar API) vs. Thinkproject-Nutzung</div>
+          <div class="legend">
+            <div class="leg-i"><div class="leg-d" style="background:var(--green)"></div>In TP aktiv</div>
+            <div class="leg-i"><div class="leg-d" style="background:var(--amber)"></div>In TP teilweise</div>
+            <div class="leg-i"><div class="leg-d" style="background:var(--red)"></div>Nicht in TP</div>
+          </div>
+          <div class="demo-table-wrap">
+            <table class="pt" id="demo-proj-table">
+              <thead><tr><th>#</th><th>Projekt</th><th>Standort</th><th>Phase</th><th>Typ</th><th>Volumen</th><th>In TP?</th><th>Module</th><th title="Datenqualität">Quelle</th></tr></thead>
+              <tbody id="demo-proj-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Gap analysis -->
+        <div class="ib" id="demo-gap-box" style="margin-bottom:14px"></div>
+
+        <!-- Questions -->
+        <div class="card">
+          <div class="clabel" style="color:var(--purple)">KI-generierte Discovery-Fragen</div>
+          <div class="qlist" id="demo-questions"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         5. SHOWPAD eOS
+    ══════════════════════════════ -->
+    <div id="sec-showpad" class="sec">
+      <div class="hed">Showpad eOS — Funktionen &amp; Meeting-Experience</div>
+      <div class="sub">Showpad ist das einzige Interface, das der AE sieht. Klicke die drei Phasen durch — und erlebe darunter das vollständige Meeting-Mockup mit den Bosch-QBR-Daten.</div>
+
+      <div class="sp-feat-g">
+        <div class="sp-feat"><div class="sp-f-ic">📱</div><div class="sp-f-t">Custom Showpad App v2</div><div class="sp-f-d">Das Intelligence-Briefing läuft als Custom App (HTML/JS, Showpad Apps SDK) direkt im Showpad eOS — kein Tool-Wechsel für den AE. Backend ruft DTAD API, Building Radar API, TP Platform API und OpenAI auf.</div><span class="sp-f-b sp-f-new">Showpad Apps v2</span></div>
+        <div class="sp-feat"><div class="sp-f-ic">📚</div><div class="sp-f-t">Guided Selling</div><div class="sp-f-d">Passende Case Studies und Decks werden automatisch empfohlen — gefiltert nach erkannter Lücke und Projekttyp. Kein manuelles Suchen.</div><span class="sp-f-b sp-f-core">Core Feature</span></div>
+        <div class="sp-feat"><div class="sp-f-ic">🎯</div><div class="sp-f-t">Advanced Experiences</div><div class="sp-f-d">Interaktive, vorparametrisierte Meeting-Oberfläche mit Kundendaten, Tabs und Live-Insights statt statischer Präsentation.</div><span class="sp-f-b sp-f-core">Core Feature</span></div>
+        <div class="sp-feat"><div class="sp-f-ic">📊</div><div class="sp-f-t">Buyer Engagement Analytics</div><div class="sp-f-d">Welche Inhalte hat der Kunde wie lange betrachtet — im Meeting und beim geteilten Follow-up-Link danach.</div><span class="sp-f-b sp-f-core">Analytics</span></div>
+      </div>
+
+      <div class="div20"></div>
+      <div class="sp-section-lbl" style="margin-bottom:12px">Die drei Terminphasen</div>
+
+      <div class="ph-tabs">
+        <div class="ph-tab on" id="pt0" onclick="setPhase(0)"><div class="ph-t-ic">📋</div><div class="ph-t-t">Vor dem Termin</div><div class="ph-t-s">Briefing laden</div></div>
+        <div class="ph-tab" id="pt1" onclick="setPhase(1)"><div class="ph-t-ic">🎤</div><div class="ph-t-t">Im Termin</div><div class="ph-t-s">Geführte Experience</div></div>
+        <div class="ph-tab" id="pt2" onclick="setPhase(2)"><div class="ph-t-ic">📤</div><div class="ph-t-t">Nach dem Termin</div><div class="ph-t-s">Recap &amp; Follow-up</div></div>
+      </div>
+
+      <div id="phd0" class="ph-det on card">
+        <div class="ph-step"><div class="ph-num">1</div><div><div class="ph-text">AE öffnet Showpad, wählt Account und Meeting-Typ — ein Klick</div><div class="ph-note">Showpad ruft Customer-Intel-Backend auf</div></div></div>
+        <div class="ph-step"><div class="ph-num">2</div><div><div class="ph-text">Custom Showpad App v2 lädt das KI-Briefing: alle Bauvorhaben, aktive TP-Projekte, Modullücken</div><div class="ph-note">DTAD API + Building Radar API → Backend → OpenAI → App rendert Ergebnis via Showpad Apps SDK</div></div></div>
+        <div class="ph-step"><div class="ph-num">3</div><div><div class="ph-text">Guided Selling empfiehlt automatisch passende Case Studies und Decks</div><div class="ph-note">Gefiltert nach erkannter Lücke und Projekttyp</div></div></div>
+      </div>
+      <div id="phd1" class="ph-det card">
+        <div class="ph-step"><div class="ph-num">1</div><div><div class="ph-text">AE führt Kunden durch Advanced Experience — Tabs mit Account-Kontext, Projektliste, Lückenanalyse</div><div class="ph-note">Vorparametrisiert durch Backend — kein leeres Template</div></div></div>
+        <div class="ph-step"><div class="ph-num">2</div><div><div class="ph-text">Showpad trackt Engagement: welche Slides wie lange, wo Rückfragen kamen</div><div class="ph-note">Buyer Engagement Analytics — automatisch</div></div></div>
+        <div class="ph-step"><div class="ph-num">3</div><div><div class="ph-text">AE hakt Discovery-Fragen live ab — Notizen direkt in Showpad, kein Tool-Wechsel</div></div></div>
+      </div>
+      <div id="phd2" class="ph-det card">
+        <div class="ph-step"><div class="ph-num">1</div><div><div class="ph-text">Showpad Field Meeting AI erstellt automatischen Recap — Gesprächspunkte, besprochene Projekte, offene To-dos</div><div class="ph-note">Buyer Engagement Analytics zeigt: welche Slides wurden wie lange betrachtet</div></div></div>
+        <div class="ph-step"><div class="ph-num">2</div><div><div class="ph-text">AE sendet personalisierten Shared Space — nur die im Meeting gezeigten Inhalte, gebrandeter Kundenraum, Link getrackt</div><div class="ph-note">Shared Spaces Feature · z.B. „Q&amp;S Case Study Batteriewerk + Handover-Modulübersicht"</div></div></div>
+        <div class="ph-step"><div class="ph-num">3</div><div><div class="ph-text">AE sieht in Echtzeit, wann Empfänger den Link öffnet und welche Inhalte er vertieft — klares Signal für nächsten Touchpoint</div><div class="ph-note">Buyer Engagement Notification · kein Ratespiel mehr ob der Kunde interessiert ist</div></div></div>
+        <div class="ph-step" style="border-left:2px solid var(--green);padding-left:12px;margin-left:14px"><div class="ph-num" style="background:var(--green)">✓</div><div><div class="ph-text">Vollständiger Loop: Briefing → Termin → Shared Space → Signal → nächster Termin — alles in Showpad</div></div></div>
+      </div>
+
+      <div class="div20"></div>
+      <div class="sp-section-lbl" style="margin-bottom:10px">Vollständiges Meeting-Mockup — so sieht die Advanced Experience im Termin aus</div>
+
+      <!-- ── SHOWPAD MOCKUP ── -->
+      <div class="mkup-wrap">
+        <div class="mkup-bar"><div class="mkup-dot"></div>Showpad Advanced Experience · Bosch QBR · Live-Mockup</div>
+
+        <div class="sp-header">
+          <div class="sp-av">BO</div>
+          <div>
+            <div class="sp-acct-name">Robert Bosch GmbH</div>
+            <div class="sp-acct-meta">QBR · 20. März 2026 · AE: M. Weber</div>
+          </div>
+          <div class="sp-hd-right">
+            <span class="sp-badge sp-b-live">Live-Daten</span>
+            <span class="sp-badge sp-b-trk">Tracking aktiv</span>
+          </div>
+        </div>
+
+        <div class="sp-tabs-row">
+          <button class="spt on" onclick="spTab('ov',this)">Überblick</button>
+          <button class="spt" onclick="spTab('pj',this)">Bauvorhaben<span class="spt-dot"></span></button>
+          <button class="spt" onclick="spTab('gp',this)">Lücken<span class="spt-dot"></span></button>
+          <button class="spt" onclick="spTab('ct',this)">Inhalte</button>
+          <button class="spt" onclick="spTab('qq',this)">Fragen</button>
+          <button class="spt" onclick="spTab('no',this)">Notizen</button>
+        </div>
+
+        <div class="sp-body">
+
+          <!-- OVERVIEW -->
+          <div id="sp-ov" class="sp-tab-c on">
+            <div class="sp-banner">
+              <div><div class="sp-b-txt"><strong>Custom Showpad App v2</strong> hat dieses Briefing automatisch über das Account Intelligence Backend geladen — DTAD + Building Radar (12 Bauvorhaben erkannt) + TP Platform API (3 aktiv oder teilweise) + CRM.<br><span style="font-size:10px;color:var(--hint)">Volumen: Schätzung auf Basis öffentlicher Meldungen · Fertigstellung: geschätzt · Regulierungskontext: KI-Inferenz</span></div>
+              <div class="sp-b-src">Stand: heute · Quellen: DTAD REST API · Building Radar API · TP Platform API · CRM · OpenAI</div></div>
+            </div>
+            <div class="sp-mini-g">
+              <div class="sp-mini"><div class="sp-mini-v c-b">12</div><div class="sp-mini-l">Bauvorhaben DTAD/BR</div></div>
+              <div class="sp-mini"><div class="sp-mini-v c-a">3/12</div><div class="sp-mini-l">in TP aktiv/teilw.</div></div>
+              <div class="sp-mini"><div class="sp-mini-v c-r">0</div><div class="sp-mini-l">Q&amp;S-Lizenzen</div></div>
+              <div class="sp-mini"><div class="sp-mini-v" style="color:var(--text)">280k</div><div class="sp-mini-l">€ ARR CRM</div></div>
+            </div>
+            <div class="sp-section-lbl" style="margin-bottom:8px">Agenda</div>
+            <div class="sp-agenda">
+              <div class="sp-ag-item"><span class="sp-ag-num">1</span>Status der laufenden Zusammenarbeit</div>
+              <div class="sp-ag-item"><span class="sp-ag-num">2</span>Laufende Bauvorhaben gemeinsam durchgehen (12 erkannt, 3 in TP)</div>
+              <div class="sp-ag-item"><span class="sp-ag-num">3</span>Lücken besprechen — Q&amp;S, Handover, fehlende Projektabdeckung</div>
+              <div class="sp-ag-item"><span class="sp-ag-num">4</span>Nächste Schritte &amp; Follow-up</div>
+            </div>
+          </div>
+
+          <!-- PROJECTS -->
+          <div id="sp-pj" class="sp-tab-c">
+            <div class="sp-banner"><div>
+              <div class="sp-b-txt">Alle 12 extern erkannten Bauvorhaben — abgeglichen mit TP-Nutzung. Klicke ein Projekt für Details + vorbereitete Frage.</div>
+              <div class="sp-b-src">DTAD REST API + Building Radar API + TP Platform API</div>
+            </div></div>
+            <div class="legend">
+              <div class="leg-i"><div class="leg-d" style="background:var(--green)"></div>In TP aktiv</div>
+              <div class="leg-i"><div class="leg-d" style="background:var(--amber)"></div>Teilweise</div>
+              <div class="leg-i"><div class="leg-d" style="background:var(--red)"></div>Nicht in TP</div>
+            </div>
+
+            <div class="pr" onclick="togglePr(this,'pd1')"><div class="pr-dot pr-dot-no"></div><div><div class="pr-name">1. Batteriewerk 3, Salzgitter</div><div class="pr-meta">Im Bau · Industrie · 450 Mio €</div></div><span class="pr-badge prb-no">Nicht in TP</span></div>
+            <div id="pd1" class="pr-detail"><div class="prd-row"><span class="prd-k">Phase</span><span class="prd-v">Im Bau seit Q3 2024</span></div><div class="prd-row"><span class="prd-k">Fertigstellung (geschätzt)</span><span class="prd-v">ca. Q2 2027</span></div><div class="prd-row"><span class="prd-k">Regulierungskontext</span><span class="prd-v">Hoch — Lithium-Chemie <span style="font-size:9px;color:var(--hint)">(KI-Inferenz)</span></span></div><div class="prd-row"><span class="prd-k">TP-Status</span><span class="prd-v" style="color:var(--red)">Kein Modul aktiv</span></div><div class="prd-q"><div class="prd-ql">Vorbereitete Frage</div>„Das Batteriewerk läuft seit Q3 — wie managen Sie die Qualitäts- und Sicherheitsdokumentation auf diesem Projekt?"</div></div>
+
+            <div class="pr" onclick="togglePr(this,'pd4')"><div class="pr-dot pr-dot-part"></div><div><div class="pr-name">4. Parkhaus Werk 7, Stuttgart</div><div class="pr-meta">Im Bau · Infrastruktur · 12 Mio €</div></div><span class="pr-badge prb-part">CDE + Cost</span></div>
+            <div id="pd4" class="pr-detail"><div class="prd-row"><span class="prd-k">Fertigstellung (geschätzt)</span><span class="prd-v">ca. August 2026</span></div><div class="prd-row"><span class="prd-k">Aktive Module</span><span class="prd-v" style="color:var(--amber)">CDE, Cost</span></div><div class="prd-row"><span class="prd-k">Handover-Modul</span><span class="prd-v" style="color:var(--red)">Nicht aktiv</span></div><div class="prd-q"><div class="prd-ql">Vorbereitete Frage</div>„Fertigstellung Parkhaus laut Datenstand August — wie ist der Handover an das FM-Team geplant?"</div></div>
+
+            <div class="pr" onclick="togglePr(this,'pd6')"><div class="pr-dot pr-dot-yes"></div><div><div class="pr-name">6. Montagewerk Erweiterung, Hallein</div><div class="pr-meta">Im Bau · Industrie · 65 Mio €</div></div><span class="pr-badge prb-yes">CDE + Q&amp;S + Cost</span></div>
+            <div id="pd6" class="pr-detail"><div class="prd-row"><span class="prd-k">Aktive Module</span><span class="prd-v" style="color:var(--green)">CDE, Q&amp;S, Cost</span></div><div class="prd-row"><span class="prd-k">Status</span><span class="prd-v" style="color:var(--green)">Gut abgedeckt</span></div><div class="prd-q"><div class="prd-ql">Gesprächsansatz</div>„Das Montagewerk läuft gut auf TP — können wir dieses Setup als Vorlage für Ihre anderen Projekte nutzen?"</div></div>
+
+            <div class="pr" onclick="togglePr(this,'pd7')"><div class="pr-dot pr-dot-part"></div><div><div class="pr-name">7. Testgelände Autom. Fahren, Boxberg</div><div class="pr-meta">Im Bau · Infrastruktur · 90 Mio €</div></div><span class="pr-badge prb-part">CDE</span></div>
+            <div id="pd7" class="pr-detail"><div class="prd-row"><span class="prd-k">Aktive Module</span><span class="prd-v" style="color:var(--green)">CDE</span></div><div class="prd-row"><span class="prd-k">Q&amp;S-Modul</span><span class="prd-v" style="color:var(--red)">Nicht aktiv</span></div><div class="prd-q"><div class="prd-ql">Vorbereitete Frage</div>„Beim Testgelände ist CDE aktiv — warum läuft Q&amp;S hier noch nicht mit?"</div></div>
+
+            <div class="pr-more-hint">Projekte 2, 3, 5, 8–12: Nicht in TP erfasst — kein Modul aktiv. → Demo-Tab für die vollständige Tabelle aller 12.</div>
+          </div>
+
+          <!-- GAPS -->
+          <div id="sp-gp" class="sp-tab-c">
+            <div class="sp-banner"><div>
+              <div class="sp-b-txt">Das Account Intelligence Backend hat diese Lücken durch Abgleich externer Projektsignale (DTAD + Building Radar API) mit dem TP-Modulstatus (TP Platform API) identifiziert. Die Custom Showpad App rendert das Ergebnis.</div>
+              <div class="sp-b-src">DTAD REST API + Building Radar API + TP Platform API + OpenAI Gap-Analyse</div>
+            </div></div>
+            <div class="gap-list">
+              <div class="gap-item crit">
+                <div class="gap-top"><span class="gap-mod" style="background:rgba(239,68,68,.12);color:var(--red)">Quality &amp; Safety</span><span class="gap-cnt">0 von 12 vollständig</span></div>
+                <div class="gap-d">5 regulierte Projekte (Batteriewerk, Chemielabor, Testgelände, weitere) — Q&amp;S nur auf Montagewerk Hallein. Compliance-Risiko auf den anderen Projekten.</div>
+              </div>
+              <div class="gap-item med">
+                <div class="gap-top"><span class="gap-mod" style="background:rgba(245,158,11,.12);color:var(--amber)">Handover &amp; Operations</span><span class="gap-cnt">0 von 12</span></div>
+                <div class="gap-d">Parkhaus-Fertigstellung in ca. 5 Monaten — kein digitales Handover-Modul eingerichtet. FM-Übergabe derzeit ungeklärt.</div>
+              </div>
+              <div class="gap-item info">
+                <div class="gap-top"><span class="gap-mod" style="background:rgba(59,130,246,.12);color:var(--blue2)">Projektabdeckung</span><span class="gap-cnt">9 von 12 nicht in TP</span></div>
+                <div class="gap-d">9 extern erkannte Bauvorhaben laufen nicht über Thinkproject — inkl. Batteriewerk (450 Mio €, größtes Projekt des Accounts).</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CONTENT -->
+          <div id="sp-ct" class="sp-tab-c">
+            <div class="sp-section-lbl" style="margin-bottom:10px">Empfohlen — basierend auf erkannten Lücken</div>
+            <div class="cc-grid">
+              <div class="cc rec"><div class="cc-type">Case Study</div><div class="cc-name">Q&amp;S im Industriebau — BASF</div><span class="cc-ch cc-rec">Empfohlen</span></div>
+              <div class="cc rec"><div class="cc-type">One-Pager</div><div class="cc-name">Handover &amp; Ops — Intro</div><span class="cc-ch cc-rec">Empfohlen</span></div>
+              <div class="cc rec"><div class="cc-type">Deck</div><div class="cc-name">TP für Owner-Operators</div><span class="cc-ch cc-rec">Empfohlen</span></div>
+              <div class="cc"><div class="cc-type">ROI-Sheet</div><div class="cc-name">Cost &amp; Contract Mgmt</div><span class="cc-ch cc-avail">Vorhanden</span></div>
+              <div class="cc"><div class="cc-type">Video</div><div class="cc-name">BIM-Integration 3 Min</div><span class="cc-ch cc-avail">Vorhanden</span></div>
+              <div class="cc"><div class="cc-type">Whitepaper</div><div class="cc-name">Compliance Anlagenbau</div><span class="cc-ch cc-avail">Vorhanden</span></div>
+            </div>
+            <div class="div16"></div>
+            <div class="sp-section-lbl" style="margin-bottom:10px">Engagement letzte Session</div>
+            <div class="eng"><span class="eng-l">Q&amp;S Case Study BASF</span><div class="eng-bar"><div class="eng-fill" style="width:82%"></div></div><span class="eng-v">82%</span></div>
+            <div class="eng"><span class="eng-l">Handover One-Pager</span><div class="eng-bar"><div class="eng-fill" style="width:61%"></div></div><span class="eng-v">61%</span></div>
+            <div class="eng"><span class="eng-l">Owner-Operators Deck</span><div class="eng-bar"><div class="eng-fill" style="width:34%"></div></div><span class="eng-v">34%</span></div>
+          </div>
+
+          <!-- QUESTIONS -->
+          <div id="sp-qq" class="sp-tab-c">
+            <div class="sp-banner"><div>
+              <div class="sp-b-txt">OpenAI-generierte Fragen aus der Datenlage. Klicke „Gestellt" um eine Frage im Meeting abzuhaken.</div>
+            </div></div>
+            <div class="q-list">
+              <div class="q-item" id="spq1"><div class="q-num">1</div><div style="flex:1"><div class="q-text">„Batteriewerk Salzgitter läuft seit Q3 — wie managen Sie die Q&amp;S-Dokumentation auf diesem Projekt?"</div><div class="q-src">DTAD/Building Radar (Industrie/Chemie-Projekt) + TP (kein Q&amp;S-Modul)</div></div><button class="q-btn" onclick="markQ('spq1',this)">Gestellt</button></div>
+              <div class="q-item" id="spq2"><div class="q-num">2</div><div style="flex:1"><div class="q-text">„Parkhaus-Fertigstellung laut Datenstand August — wie ist der Handover an das FM-Team geplant?"</div><div class="q-src">DTAD/Building Radar (Zeitplan-Schätzung) + TP (kein Handover-Modul)</div></div><button class="q-btn" onclick="markQ('spq2',this)">Gestellt</button></div>
+              <div class="q-item" id="spq3"><div class="q-num">3</div><div style="flex:1"><div class="q-text">„9 Ihrer Bauvorhaben tauchen in Thinkproject nicht auf — wo laufen diese Projekte aktuell?"</div><div class="q-src">DTAD/Building Radar (12 Projekte erkannt) vs. TP API (3 aktiv)</div></div><button class="q-btn" onclick="markQ('spq3',this)">Gestellt</button></div>
+              <div class="q-item" id="spq4"><div class="q-num">4</div><div style="flex:1"><div class="q-text">„Beim Testgelände Boxberg ist CDE aktiv — warum läuft Q&amp;S hier noch nicht mit?"</div><div class="q-src">DTAD/Building Radar + TP (CDE aktiv, Q&amp;S fehlt)</div></div><button class="q-btn" onclick="markQ('spq4',this)">Gestellt</button></div>
+            </div>
+          </div>
+
+          <!-- NOTES -->
+          <div id="sp-no" class="sp-tab-c">
+            <div class="ns-lbl">Meeting-Notizen</div>
+            <textarea class="notes-ta" placeholder="Notizen direkt hier erfassen — fließen automatisch in den Showpad-Recap nach dem Meeting..."></textarea>
+            <div class="div16"></div>
+            <div class="ns-lbl">Nächste Schritte</div>
+            <div>
+              <div class="ns-check"><input type="checkbox"><span class="ns-check-t">Q&amp;S-Demo für Batteriewerk-Team koordinieren</span></div>
+              <div class="ns-check"><input type="checkbox"><span class="ns-check-t">Handover-Workshop für Parkhaus vereinbaren</span></div>
+              <div class="ns-check"><input type="checkbox"><span class="ns-check-t">Follow-up-Link mit Q&amp;S Case Study + Handover-Deck senden</span></div>
+              <div class="ns-check"><input type="checkbox"><span class="ns-check-t">Projektliste abstimmen: welche Bauvorhaben sollen auf TP ongebracht werden?</span></div>
+            </div>
+          </div>
+
+        </div><!-- end sp-body -->
+      </div><!-- end mkup-wrap -->
+    </div>
+
+    <!-- ══════════════════════════════
+         6. MEHRWERT / ROI
+    ══════════════════════════════ -->
+    <div id="sec-roi" class="sec">
+      <div class="hed">Mehrwert — ehrlich betrachtet</div>
+      <div class="sub">Konkrete ARR-Prognosen sind ohne belastbare interne Daten nicht seriös herleitbar. Was klar ist: der qualitative Sprung in der Gesprächsqualität ist real und systematisierbar.</div>
+
+      <div class="cav">
+        <div class="cav-h">Transparenzhinweis zu ROI-Zahlen</div>
+        <div class="cav-t">Pauschale ARR-Zahlen (z.B. „X€ Upsell je Account") sind ohne Daten zu ACV je Modul und historischer Upsell-Conversion nicht belastbar. Sobald diese intern vorliegen — ACV je Modul + Conversion-Rate + Anzahl Accounts mit Datenlücken — lässt sich ein valider Business Case rechnen.</div>
+      </div>
+
+      <div class="roi-table">
+        <div class="roi-row"><div class="roi-th">Dimension</div><div class="roi-th">Heute</div><div class="roi-th">Mit System</div></div>
+        <div class="roi-row"><div class="roi-td">Externe Kundensignale</div><div class="roi-td dim">Nicht vorhanden</div><div class="roi-td pos">API-gestützt, strukturiert</div></div>
+        <div class="roi-row"><div class="roi-td">Gesprächsqualität</div><div class="roi-td dim">Abhängig von AE-Erfahrung</div><div class="roi-td pos">Datenbasiert, proaktiv</div></div>
+        <div class="roi-row"><div class="roi-td">Upsell-Erkennung</div><div class="roi-td dim">Reaktiv — Kunde muss fragen</div><div class="roi-td pos">Proaktiv — vor dem Termin</div></div>
+        <div class="roi-row"><div class="roi-td">Content-Relevanz</div><div class="roi-td dim">AE wählt nach Gefühl</div><div class="roi-td pos">Showpad Guided Selling</div></div>
+        <div class="roi-row"><div class="roi-td">Skalierung auf Junior-AEs</div><div class="roi-td dim">Qualität = f(Seniorität)</div><div class="roi-td pos">Gleichwertig für alle AEs</div></div>
+        <div class="roi-row"><div class="roi-td">Meeting-Nachverfolgung</div><div class="roi-td dim">Manuell, inkonsistent</div><div class="roi-td pos">Recap + getrackte Links</div></div>
+      </div>
+
+      <div class="g3" style="margin-top:6px">
+        <div class="card-sm" style="border-color:rgba(59,130,246,.2)"><div class="clabel" style="color:var(--blue2)">Für AEs</div><div style="font-size:12px;color:var(--text);line-height:1.6">Wer mit Fakten reingeht, führt ein anderes Gespräch — Themen setzen, die der Kunde noch nicht auf dem Radar hat.</div></div>
+        <div class="card-sm" style="border-color:rgba(16,185,129,.2)"><div class="clabel" style="color:var(--green)">Für Sales Leadership</div><div style="font-size:12px;color:var(--text);line-height:1.6">Upsell-Potenziale werden systematisch sichtbar — nicht durch Einzelinitiativen, sondern strukturiert über alle Accounts.</div></div>
+        <div class="card-sm" style="border-color:rgba(245,158,11,.2)"><div class="clabel" style="color:var(--amber)">Für Thinkproject</div><div style="font-size:12px;color:var(--text);line-height:1.6">Das Unternehmen wird zum datengetriebenen Partner — nicht zum Toolanbieter, der auf Renewals wartet.</div></div>
+      </div>
+
+      <div class="hl" style="margin-top:18px">
+        <p><strong>Nächster Schritt:</strong> ACV je Modul aus internen Daten + historische Upsell-Conversion-Rate + Anzahl Bestandskunden mit Datenlücken = valider, verteidigbarer Business Case. Diese Daten liegen intern vor und müssen nur strukturiert abgefragt werden.</p>
+      </div>
+
+      <!-- DSGVO SECTION -->
+      <div class="div20" style="margin-top:28px"></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div class="hed" style="margin-bottom:0;font-size:17px">Datenschutz &amp; DSGVO-Konformität</div>
+        <span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:rgba(16,185,129,.12);color:var(--green);border:1px solid rgba(16,185,129,.3)">✓ umsetzbar DSGVO-konform</span>
+      </div>
+      <div class="sub" style="margin-bottom:16px">Das System kombiniert externe Marktdaten, interne Kundendaten und KI. Jede Datenquelle hat einen anderen Schutzbedarf — hier die klare Einordnung.</div>
+
+      <div class="g2" style="margin-bottom:12px">
+        <div class="card-sm" style="border-color:rgba(16,185,129,.25)">
+          <div class="clabel" style="color:var(--green);margin-bottom:8px">✓ DSGVO-neutral — kein Handlungsbedarf</div>
+          <div style="font-size:11px;color:var(--text);line-height:1.7">
+            <div style="margin-bottom:5px"><strong>DTAD &amp; Building Radar:</strong> Liefern ausschließlich <em>Firmendaten</em> (GmbH, AG) und Projektdaten — keine natürlichen Personen, kein personenbezogenes Datum nach Art. 4 DSGVO. Verarbeitung ohne AVV möglich.</div>
+            <div><strong>TP Platform API:</strong> AE hat ohnehin Zugriff auf diese Daten im CRM/TP. Keine neue Datenkategorie, keine neue Verarbeitungsgrundlage nötig.</div>
+          </div>
+        </div>
+        <div class="card-sm" style="border-color:rgba(245,158,11,.3)">
+          <div class="clabel" style="color:var(--amber);margin-bottom:8px">⚠ CRM-Daten — bedingt kritisch</div>
+          <div style="font-size:11px;color:var(--text);line-height:1.7">
+            <div style="margin-bottom:5px"><strong>Personenbezogene Felder</strong> (Ansprechpartner, E-Mail, Telefon) <em>dürfen nicht</em> an das KI-Backend übergeben werden.</div>
+            <div><strong>Lösung:</strong> Das System übergibt nur: Firmenname, ARR, Modulstatus, Meeting-Typ. Keine Kontakt-IDs, keine Namen. Interner Ansprechpartner bleibt im CRM-Silo. Diese Trennung muss technisch erzwungen werden (Backend-seitiges Feldfilter).</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="g2" style="margin-bottom:12px">
+        <div class="card-sm" style="border-color:rgba(239,68,68,.25)">
+          <div class="clabel" style="color:var(--red);margin-bottom:8px">🔴 Kritischer Punkt: OpenAI-API</div>
+          <div style="font-size:11px;color:var(--text);line-height:1.7">
+            <div style="margin-bottom:5px">Standard OpenAI API → Verarbeitung in den <strong>USA</strong> → Drittlandstransfer nach Art. 44 DSGVO → ohne weitere Maßnahmen <em>nicht zulässig</em> für EU-Unternehmensdaten.</div>
+            <div>OpenAI nutzt API-Inputs standardmäßig <em>nicht</em> für Training, aber das allein reicht rechtlich nicht aus ohne Standardvertragsklauseln (SCC) + Transfer Impact Assessment (TIA).</div>
+          </div>
+        </div>
+        <div class="card-sm" style="border-color:rgba(16,185,129,.25)">
+          <div class="clabel" style="color:var(--green);margin-bottom:8px">✓ Lösung: EU-gehostete KI</div>
+          <div style="font-size:11px;color:var(--text);line-height:1.7">
+            <div style="margin-bottom:6px"><strong>Option A — Azure OpenAI Service (EU-Region):</strong> GPT-4 auf Microsoft-Infrastruktur in der EU. ISO 27001 zertifiziert, DSGVO-konformer AVV verfügbar, Daten verlassen die EU nicht.</div>
+            <div><strong>Option B — Anthropic Claude via AWS Bedrock (Region eu-central-1):</strong> Frankfurt-hosted. Exakt die Lösung, die Showpad selbst für seine eigene KI-Infrastruktur nutzt. AVV in den AWS-Servicebedingungen enthalten.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-sm" style="border-color:rgba(96,165,250,.2);margin-bottom:6px">
+        <div class="clabel" style="color:var(--blue2);margin-bottom:10px">📋 Was vertraglich &amp; organisatorisch in Kraft sein muss</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="font-size:11px;color:var(--text);line-height:1.6"><span style="color:var(--green);margin-right:5px">✓</span><strong>AVV mit KI-Anbieter</strong> (Azure/AWS) — Standard, einfach abschließbar</div>
+          <div style="font-size:11px;color:var(--text);line-height:1.6"><span style="color:var(--green);margin-right:5px">✓</span><strong>Technische Feldfilterung</strong> — CRM-Personenfelder werden vor API-Call entfernt</div>
+          <div style="font-size:11px;color:var(--text);line-height:1.6"><span style="color:var(--green);margin-right:5px">✓</span><strong>Keine Datenpersistenz</strong> — Briefings werden session-basiert erzeugt, nicht gespeichert</div>
+          <div style="font-size:11px;color:var(--text);line-height:1.6"><span style="color:var(--green);margin-right:5px">✓</span><strong>Verarbeitungsverzeichnis</strong> (Art. 30) um die neue Verarbeitungstätigkeit zu dokumentieren</div>
+          <div style="font-size:11px;color:var(--text);line-height:1.6"><span style="color:var(--amber);margin-right:5px">~</span><strong>DTAD/Building Radar Lizenzprüfung</strong> — AGB auf erlaubte Downstream-Nutzung prüfen</div>
+          <div style="font-size:11px;color:var(--text);line-height:1.6"><span style="color:var(--amber);margin-right:5px">~</span><strong>Datenschutz-Folgenabschätzung (DSFA)</strong> — empfohlen, da neue Verarbeitungsform</div>
+        </div>
+      </div>
+
+      <div style="font-size:11px;color:var(--hint);margin-top:8px;padding:0 4px">
+        Einschätzung: Mit EU-gehosteter KI (Azure OpenAI oder AWS Bedrock eu-central-1), technischer Feldfilterung und einem AVV ist das System <strong style="color:var(--green)">DSGVO-konform betreibbar</strong>. Kein rechtliches Hindernis — nur Konfigurationsentscheidungen.
+      </div>
+    </div>
+
+  </div><!-- end .main -->
+</div><!-- end .shell -->
+
+<script>
+/* ── DATA LAYER ── */
+const ACCOUNTS = {
+  bosch: {
+    name: 'Robert Bosch GmbH',
+    logo: '🏭',
+    type: 'Bestandskunde',
+    arr: '280k €',
+    renewal: 'Sep 2026',
+    lastActivity: 'vor 47 Tagen',
+    csmOwner: 'M. Weber',
+    contractSince: '2019',
+    openOpp: 'Q&S-Erweiterung (noch nicht besprochen)',
+    projects: [
+      {n:1, name:'Batteriewerk 3',       loc:'Salzgitter',   phase:'Im Bau',    type:'Industrie',    vol:'≈450 Mio €', tp:'no',   mods:'—',          match:'confirmed'},
+      {n:2, name:'Logistikhub Süd',      loc:'Stuttgart',    phase:'Planung',   type:'Logistik',     vol:'≈85 Mio €',  tp:'no',   mods:'—',          match:'confirmed'},
+      {n:3, name:'F&E-Zentrum KI',       loc:'Renningen',    phase:'Vorplanung',type:'Labor',        vol:'≈120 Mio €', tp:'no',   mods:'—',          match:'estimate'},
+      {n:4, name:'Parkhaus Werk 7',      loc:'Stuttgart',    phase:'Im Bau',    type:'Infrastruktur',vol:'≈12 Mio €',  tp:'part', mods:'CDE, Cost',  match:'confirmed'},
+      {n:5, name:'Chemielabor Upgrade',  loc:'Biberach',     phase:'Im Bau',    type:'Labor',        vol:'≈38 Mio €',  tp:'no',   mods:'—',          match:'confirmed'},
+      {n:6, name:'Montagewerk Erweiterung',loc:'Hallein (AT)',phase:'Im Bau',   type:'Industrie',    vol:'≈65 Mio €',  tp:'yes',  mods:'CDE, Q&S, Cost', match:'confirmed'},
+      {n:7, name:'Testgelände Aut. Fahren',loc:'Boxberg',    phase:'Im Bau',    type:'Infrastruktur',vol:'≈90 Mio €',  tp:'part', mods:'CDE',        match:'confirmed'},
+      {n:8, name:'Bürokomplex HQ-Süd',   loc:'Stuttgart',    phase:'Planung',   type:'Büro',         vol:'≈55 Mio €',  tp:'no',   mods:'—',          match:'estimate'},
+      {n:9, name:'Kühllogistik-Hub',     loc:'Ansbach',      phase:'Planung',   type:'Logistik',     vol:'≈28 Mio €',  tp:'no',   mods:'—',          match:'estimate'},
+      {n:10,name:'Energiezentrale',      loc:'Homburg',      phase:'Im Bau',    type:'Industrie',    vol:'≈22 Mio €',  tp:'no',   mods:'—',          match:'estimate'},
+      {n:11,name:'Werksgelände Renat.',  loc:'Gerlingen',    phase:'Vorplanung',type:'Außenanlagen', vol:'≈8 Mio €',   tp:'no',   mods:'—',          match:'inferred'},
+      {n:12,name:'Prüfstandhalle Erw.',  loc:'Abstatt',      phase:'Im Bau',    type:'Industrie',    vol:'≈18 Mio €',  tp:'no',   mods:'—',          match:'inferred'},
+    ]
+  },
+  hochtief: {
+    name: 'HOCHTIEF AG',
+    logo: '🏗',
+    type: 'Bestandskunde',
+    arr: '520k €',
+    renewal: 'Feb 2027',
+    lastActivity: 'vor 12 Tagen',
+    csmOwner: 'S. Richter',
+    contractSince: '2017',
+    openOpp: 'Cost-Modul Erweiterung (in Diskussion)',
+    projects: [
+      {n:1, name:'Rechenzentrum Campus A', loc:'Frankfurt',    phase:'Im Bau',    type:'Industrie',    vol:'≈380 Mio €', tp:'yes',  mods:'CDE, Q&S',        match:'confirmed'},
+      {n:2, name:'Autobahnbrücke A7',      loc:'Hamburg',      phase:'Im Bau',    type:'Infrastruktur',vol:'≈210 Mio €', tp:'part', mods:'CDE',             match:'confirmed'},
+      {n:3, name:'Büroturm Opernplatz',    loc:'Frankfurt',    phase:'Planung',   type:'Büro',         vol:'≈480 Mio €', tp:'no',   mods:'—',               match:'confirmed'},
+      {n:4, name:'Tunnelsanierung B10',    loc:'Pforzheim',    phase:'Im Bau',    type:'Infrastruktur',vol:'≈95 Mio €',  tp:'no',   mods:'—',               match:'confirmed'},
+      {n:5, name:'Wohnquartier Hafencity', loc:'Hamburg',      phase:'Im Bau',    type:'Wohnbau',      vol:'≈320 Mio €', tp:'yes',  mods:'CDE, Cost, Handover', match:'confirmed'},
+      {n:6, name:'Schule Neubau Mitte',    loc:'Berlin',       phase:'Planung',   type:'Öffentlich',   vol:'≈45 Mio €',  tp:'no',   mods:'—',               match:'estimate'},
+      {n:7, name:'Logistikzentrum Ost',    loc:'Leipzig',      phase:'Vorplanung',type:'Logistik',     vol:'≈130 Mio €', tp:'no',   mods:'—',               match:'estimate'},
+      {n:8, name:'Krankenhaus Erweiterung',loc:'München',      phase:'Im Bau',    type:'Gesundheit',   vol:'≈260 Mio €', tp:'part', mods:'CDE',             match:'confirmed'},
+      {n:9, name:'Kläranlage Neubau',      loc:'Köln',         phase:'Planung',   type:'Infrastruktur',vol:'≈72 Mio €',  tp:'no',   mods:'—',               match:'estimate'},
+      {n:10,name:'Sportarena Sanierung',   loc:'Dortmund',     phase:'Im Bau',    type:'Sport',        vol:'≈88 Mio €',  tp:'no',   mods:'—',               match:'inferred'},
+    ]
+  }
+};
+
+const MEETING_DATA = {
+  bosch: {
+    qbr: {
+      label:'QBR', badge:'mt-qbr', sub:'Bestandskunde · Quarterly Business Review',
+      context:'Regelmäßiger QBR mit Bosch — Fokus auf Nutzungstiefe, White Spaces und Verlängerung. 9 von 12 extern erkannten Bauvorhaben laufen noch nicht über Thinkproject.',
+      gap:'9 von 12 Bauvorhaben nicht in TP. Batteriewerk Salzgitter (450 Mio €, reguliert) ohne Q&S. Parkhaus-Fertigstellung in 5 Monaten ohne Handover-Modul.',
+      questions:[
+        {t:'"Batteriewerk Salzgitter läuft seit Q3 — wie managen Sie die Q&S-Dokumentation auf diesem Projekt?"',s:'DTAD/Building Radar (Industrie) + TP (kein Q&S)'},
+        {t:'"Parkhaus-Fertigstellung laut Datenstand August — wie ist der Handover an das FM-Team geplant?"',s:'DTAD/Building Radar (Zeitplan geschätzt) + TP (kein Handover)'},
+        {t:'"9 Ihrer Bauvorhaben sind nicht in TP — wo laufen diese gerade?"',s:'DTAD/Building Radar (12) vs. TP API (3 aktiv)'},
+        {t:'„Das Montagewerk in Hallein läuft gut auf TP — kann das als Vorlage für andere Projekte dienen?"',s:'TP (vollständig aktiv) → Expansion-Argument'},
+      ]
+    },
+    exec: {
+      label:'Executive Review', badge:'mt-exec', sub:'Bestandskunde · Executive Review mit C-Level',
+      context:'Executive Review auf C-Level. Fokus auf strategischen Mehrwert, Risikominimierung und Skalierbarkeit des Thinkproject-Einsatzes über alle Bosch-Standorte.',
+      gap:'Strategische Lücke: Nur 3 von 12 Projekten in TP — Skalierungspotenzial ungenutzt. Keine konzernweite Standardisierung erkennbar.',
+      questions:[
+        {t:'„Wie managt Bosch aktuell die Qualitätssicherung über alle Bauprojekte hinweg — gibt es einen konzernweiten Standard?"',s:'Strategische Gap-Analyse'},
+        {t:'"Welche Projekte sind für Sie intern am kritischsten — und warum laufen diese noch nicht auf TP?"',s:'DTAD/Building Radar (12 Projekte) vs. TP (3 aktiv)'},
+        {t:'„Welche Risiken sehen Sie in der fehlenden Digitalisierung Ihrer Bauprojekt-Dokumentation?"',s:'C-Level Framing'},
+        {t:'„Was wäre nötig, damit Thinkproject zum konzernweiten Standard für alle Bauvorhaben wird?"',s:'Skalierungs-Hypothese'},
+      ]
+    },
+    newbiz: {
+      label:'New Business', badge:'mt-newbiz', sub:'Neukunden-Gespräch · Ersttermin',
+      context:'Ersttermin mit Bosch — kein aktiver TP-Vertrag. DTAD + Building Radar zeigen 12 extern sichtbare Bauvorhaben (Volumen-Schätzungen auf Basis öffentlicher Meldungen). Branchenkontext: Industrieunternehmen mit >10 gleichzeitigen Bauprojekten ohne digitale CDE/Q&S-Lösung haben laut Marktdaten durchschnittlich 12–18% höhere Nachtragsquoten. Einstieg über Pain Points in Qualitäts- und Kostendokumentation.',
+      gap:'Kein TP-Modul aktiv. 8 Bauvorhaben im Bau ohne strukturiertes CDE. Batteriewerk (450 Mio €) ohne digitale Q&S-Dokumentation — regulatorisches Risiko.',
+      questions:[
+        {t:'"Wie dokumentieren Sie aktuell Qualitäts- und Sicherheitsprozesse auf großen Bauprojekten wie dem Batteriewerk?"',s:'DTAD/Building Radar (Projektphase) + kein TP vorhanden'},
+        {t:'„Welche Tools nutzen Sie heute für die Baukoordination zwischen Auftraggeber und Generalunternehmer?"',s:'Bedarfsanalyse Neukunde'},
+        {t:'„Wo entstehen bei Ihnen die größten Reibungsverluste beim Informationsaustausch auf Bauprojekten?"',s:'Discovery-Frage Neukunde'},
+        {t:'"Das Batteriewerk hat eine sehr lange Betriebsdauer — wie planen Sie heute den späteren Handover an das FM-Team?"',s:'DTAD/Building Radar (Zeitplan geschätzt 2027)'},
+      ]
+    }
+  },
+  hochtief: {
+    qbr: {
+      label:'QBR', badge:'mt-qbr', sub:'Bestandskunde · Quarterly Business Review',
+      context:'QBR mit HOCHTIEF — 520k€ ARR. Gute Basis mit 3 aktiven Projekten. 7 weitere erkannte Bauvorhaben ohne TP-Abdeckung, darunter das 480-Mio-Büroturm-Projekt.',
+      gap:'7 von 10 Projekten nicht vollständig in TP. Büroturm Opernplatz (480 Mio €, Planung) noch ohne TP-Ansatz. Krankenhaus und Brücke nur mit CDE — Q&S fehlt.',
+      questions:[
+        {t:'"Der Büroturm am Opernplatz ist in Planung — ist Thinkproject für dieses Projekt schon eingeplant?"',s:'DTAD/Building Radar (Planungsphase) + TP (nicht erfasst)'},
+        {t:'„Krankenhaus München hat nur CDE aktiv — warum läuft Q&S auf diesem regulierten Projekt nicht mit?"',s:'TP (CDE aktiv, Q&S fehlt)'},
+        {t:'„Autobahnbrücke A7 — welche Module fehlen noch, damit das Projekt vollständig auf TP abgedeckt ist?"',s:'TP (CDE aktiv, Cost fehlt)'},
+        {t:'„Das Wohnquartier Hafencity läuft vollständig auf TP — kann dieses Setup als Vorlage für andere Projekte dienen?"',s:'TP (vollständig aktiv)'},
+      ]
+    },
+    exec: {
+      label:'Executive Review', badge:'mt-exec', sub:'Bestandskunde · Executive Review',
+      context:'Executive Review mit HOCHTIEF-Management. Fokus auf konzernweite Standardisierung und Skalierung des TP-Einsatzes über alle Projekttypen.',
+      gap:'Heterogene Abdeckung: 3 Projekte gut, 7 lückenhaft oder gar nicht in TP. Kein einheitlicher Modul-Standard erkennbar.',
+      questions:[
+        {t:'„Gibt es bei HOCHTIEF einen konzernweiten Standard, welche TP-Module auf welchen Projekttypen laufen?"',s:'Strategische Gap-Analyse'},
+        {t:'„Was hindert Sie daran, alle laufenden Projekte vollständig auf Thinkproject zu standardisieren?"',s:'Skalierungs-Hypothese'},
+        {t:'„Wie messen Sie heute die Qualitätssicherungsleistung über alle Projekte hinweg?"',s:'C-Level Framing'},
+        {t:'"Welche Projekte stehen als nächstes in der Pipeline — und wie können wir da frühzeitig eingebunden werden?"',s:'DTAD/Building Radar (Planungsprojekte)'},
+      ]
+    },
+    newbiz: {
+      label:'New Business', badge:'mt-newbiz', sub:'Neukunden-Gespräch · Ersttermin',
+      context:'Ersttermin mit HOCHTIEF — kein aktiver TP-Vertrag. DTAD + Building Radar zeigen 10 extern sichtbare Bauvorhaben. Als Generalunternehmer mit über 480 Mio € im Planen/Bauen: Branchenkontext zeigt, dass GU ohne digitales Handover-Modul im Schnitt 3–6 Wochen längere FM-Übergaben haben. Einstieg über CDE-Standardisierung und Q&S auf regulierten Projekten.',
+      gap:'Kein TP aktiv. 7 Bauvorhaben im Bau ohne strukturiertes CDE. Rechenzentrum Frankfurt (380 Mio €) ohne digitale Q&S-Dokumentation.',
+      questions:[
+        {t:'„Wie koordinieren Sie aktuell den Dokumenten- und Informationsaustausch mit Auftraggebern auf Großprojekten?"',s:'Discovery-Frage Neukunde'},
+        {t:'"Beim Rechenzentrum-Campus Frankfurt — wie läuft dort die Qualitätsdokumentation ab?"',s:'DTAD/Building Radar (Projektphase aktiv)'},
+        {t:'„Welche Tools nutzen Sie heute für CDE und Baukoordination?"',s:'Bedarfsanalyse'},
+        {t:'„Wo entstehen die größten Reibungsverluste bei Projektübergaben an den Bauherrn?"',s:'Handover Pain Point'},
+      ]
+    }
+  }
+};
+
+/* ── NAVIGATION ── */
+let archPulsed = false;
+function go(id, btn) {
+  document.querySelectorAll('.sec').forEach(s => s.classList.remove('on'));
+  document.querySelectorAll('.mnb').forEach(b => b.classList.remove('on'));
+  document.getElementById('sec-' + id).classList.add('on');
+  btn.classList.add('on');
+  // Pulse all fnode cards once when arch tab first opened
+  if (id === 'arch' && !archPulsed) {
+    archPulsed = true;
+    [0,1,2,3,4].forEach((i, idx) => {
+      const el = document.getElementById('fb'+i);
+      if (!el) return;
+      setTimeout(() => {
+        el.classList.add('fnode-pulse');
+        el.addEventListener('animationend', () => el.classList.remove('fnode-pulse'), {once:true});
+      }, idx * 180);
+    });
+  }
+}
+
+/* ── ARCH ── */
+function setArch(n) {
+  for (let i = 0; i < 5; i++) {
+    document.getElementById('as'+i).classList.toggle('on', i === n);
+    document.getElementById('ad'+i).classList.toggle('on', i === n);
+    // sync visual flow diagram
+    const fb = document.getElementById('fb'+i);
+    if (fb) fb.classList.toggle('active', i === n);
+  }
+}
+
+/* ── PHASE ── */
+function setPhase(n) {
+  for (let i = 0; i < 3; i++) {
+    document.getElementById('pt'+i).classList.toggle('on', i === n);
+    document.getElementById('phd'+i).classList.toggle('on', i === n);
+  }
+}
+
+/* ── SHOWPAD MOCKUP TABS ── */
+function spTab(id, btn) {
+  document.querySelectorAll('.sp-tab-c').forEach(t => t.classList.remove('on'));
+  document.querySelectorAll('.spt').forEach(b => b.classList.remove('on'));
+  document.getElementById('sp-' + id).classList.add('on');
+  btn.classList.add('on');
+}
+
+/* ── PROJECT ROWS IN MOCKUP ── */
+function togglePr(row, detId) {
+  const det = document.getElementById(detId);
+  const isOpen = det.classList.contains('open');
+  document.querySelectorAll('.pr-detail').forEach(d => d.classList.remove('open'));
+  document.querySelectorAll('.pr').forEach(r => r.classList.remove('sel'));
+  if (!isOpen) { det.classList.add('open'); row.classList.add('sel'); }
+}
+
+/* ── QUESTION MARK-DONE ── */
+function markQ(id, btn) {
+  document.getElementById(id).classList.add('done');
+  btn.textContent = '✓';
+  btn.disabled = true;
+}
+
+/* ── DEMO ── */
+function resetDemo() {
+  document.getElementById('demo-out').classList.remove('on');
+  const btn = document.getElementById('gbtn');
+  btn.disabled = false;
+  btn.style.background = '';
+  btn.classList.remove('loading');
+  document.getElementById('gbtn-l').textContent = 'Intelligence laden';
+}
+
+function runDemo() {
+  const acctKey = document.getElementById('demo-account').value;
+  const mtKey = document.getElementById('demo-mtype').value;
+  const acct = ACCOUNTS[acctKey];
+  const mtData = MEETING_DATA[acctKey][mtKey];
+
+  const btn = document.getElementById('gbtn');
+  btn.disabled = true;
+  btn.classList.add('loading');
+
+  const isNewBiz = mtKey === 'newbiz';
+  const tpCount = acct.projects.filter(p => p.tp !== 'no').length;
+  const total = acct.projects.length;
+
+  const loadSteps = [
+    `DTAD + Building Radar API — ${total} Projekte werden geladen...`,
+    isNewBiz ? 'CRM — Kontakthistorie wird gesucht...' : `TP Platform API — ${tpCount} aktive Projekte gefunden...`,
+    'Gap-Analyse läuft...',
+    'OpenAI generiert Briefing...'
+  ];
+  let i = 0;
+  document.getElementById('gbtn-l').textContent = loadSteps[0];
+  const iv = setInterval(() => {
+    i++;
+    if (i < loadSteps.length) {
+      document.getElementById('gbtn-l').textContent = loadSteps[i];
+    } else {
+      clearInterval(iv);
+      btn.classList.remove('loading');
+      document.getElementById('gbtn-l').textContent = 'Briefing geladen ✓';
+      btn.style.background = 'var(--green)';
+      renderDemo(acct, mtData, acctKey, mtKey);
+      document.getElementById('demo-out').classList.add('on');
+    }
+  }, 800);
+}
+
+function renderDemo(acct, mt, acctKey, mtKey) {
+  const isNewBiz = mtKey === 'newbiz';
+  const tpActive = acct.projects.filter(p => p.tp === 'yes').length;
+  const tpPartial = acct.projects.filter(p => p.tp === 'part').length;
+  const tpNone = acct.projects.filter(p => p.tp === 'no').length;
+  const total = acct.projects.length;
+
+  // header
+  document.getElementById('demo-logo').textContent = acct.logo;
+  document.getElementById('demo-acct-name').textContent = acct.name;
+  const badge = document.getElementById('demo-mt-badge');
+  badge.textContent = mt.label;
+  badge.className = 'mt-badge ' + mt.badge;
+  document.getElementById('demo-acct-sub').textContent = (isNewBiz ? 'Neukunde' : 'Bestandskunde') + ' · ' + mt.sub.split(' · ').slice(1).join(' · ');
+
+  // stats
+  const statsEl = document.getElementById('demo-stats');
+  if (isNewBiz) {
+    statsEl.innerHTML = `
+      <div class="stat"><div class="sv c-b">${total}</div><div class="sl">Bauvorhaben erkannt</div><div class="ss">DTAD + Building Radar</div></div>
+      <div class="stat"><div class="sv c-a">0 / ${total}</div><div class="sl">in Thinkproject</div><div class="ss">Neukunde — kein Vertrag</div></div>
+      <div class="stat"><div class="sv c-r">0</div><div class="sl">Q&S-Lizenzen</div><div class="ss">kein Modul aktiv</div></div>
+      <div class="stat"><div class="sv c-g">—</div><div class="sl">ARR</div><div class="ss">Neukunde · CRM: kein Eintrag</div></div>`;
+  } else {
+    statsEl.innerHTML = `
+      <div class="stat"><div class="sv c-b">${total}</div><div class="sl">Bauvorhaben erkannt</div><div class="ss">DTAD + Building Radar</div></div>
+      <div class="stat"><div class="sv c-a">${tpActive+tpPartial} / ${total}</div><div class="sl">in Thinkproject</div><div class="ss">aktiv oder teilweise</div></div>
+      <div class="stat"><div class="sv c-r">0</div><div class="sl">Q&S vollständig</div><div class="ss">auf regulierten Projekten</div></div>
+      <div class="stat"><div class="sv c-g">${acct.arr}</div><div class="sl">aktueller ARR</div><div class="ss">Quelle: CRM</div></div>`;
+  }
+
+  // CRM pills
+  const crmRowEl = document.getElementById('demo-crm-row');
+  if (crmRowEl) {
+    if (!isNewBiz && acct.renewal) {
+      const renewalColor = acct.renewal && acct.renewal.includes('2026') ? 'var(--amber)' : 'var(--hint)';
+      crmRowEl.innerHTML = [
+        `<span style="font-size:10px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:4px;padding:2px 7px;color:${renewalColor}">📅 Renewal: ${acct.renewal}</span>`,
+        `<span style="font-size:10px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:4px;padding:2px 7px;color:var(--hint)">🕒 Letzte Aktivität: ${acct.lastActivity}</span>`,
+        `<span style="font-size:10px;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);border-radius:4px;padding:2px 7px;color:#a5b4fc">⚡ Offen: ${acct.openOpp}</span>`,
+      ].join('');
+    } else {
+      crmRowEl.innerHTML = '';
+    }
+  }
+
+  // context box
+  const ctxEl = document.getElementById('demo-context-box');
+  ctxEl.innerHTML = `<div class="ib-l">KI-Kontext (${mt.label})</div><div class="ib-t">${mt.context}</div><div class="ib-s">Generiert aus: DTAD REST API + Building Radar API + TP Platform API + OpenAI · Meeting-Typ: ${mt.label}</div>`;
+
+  // table title
+  document.getElementById('demo-table-title').textContent = isNewBiz
+    ? `${total} extern sichtbare Bauvorhaben (DTAD + Building Radar) — Neukunde, noch kein TP`
+    : `${total} extern sichtbare Bauvorhaben (DTAD + Building Radar API) vs. Thinkproject-Nutzung`;
+
+  // table rows
+  const tbody = document.getElementById('demo-proj-tbody');
+  const phaseClass = p => { if(p==='Im Bau') return 'sb sb-act'; if(p==='Planung') return 'sb sb-plan'; return 'sb sb-plan' };
+  const tpBadge = tp => {
+    if(tp==='yes') return '<span class="sb sb-yes">Ja</span>';
+    if(tp==='part') return '<span class="sb sb-part">Teilweise</span>';
+    return '<span class="sb sb-no">Nein</span>';
+  };
+  const matchBadge = m => {
+    if(m==='confirmed') return '<span title="Firmenname eindeutig gematcht" style="font-size:9px;background:rgba(34,197,94,.12);color:var(--green);border-radius:3px;padding:1px 5px">\u2713 best\u00e4tigt</span>';
+    if(m==='estimate') return '<span title="Treffer wahrscheinlich, Volumen gesch\u00e4tzt" style="font-size:9px;background:rgba(245,158,11,.12);color:var(--amber);border-radius:3px;padding:1px 5px">~ Sch\u00e4tzung</span>';
+    return '<span title="Inferiert aus öffentlichen Quellen" style="font-size:9px;background:rgba(255,255,255,.05);color:var(--hint);border-radius:3px;padding:1px 5px">? inferiert</span>';
+  };
+  tbody.innerHTML = acct.projects.map(p => `
+    <tr>
+      <td style="color:var(--hint)">${p.n}</td>
+      <td>${p.name}</td>
+      <td>${p.loc}</td>
+      <td><span class="${phaseClass(p.phase)}">${p.phase}</span></td>
+      <td>${p.type}</td>
+      <td style="white-space:nowrap">${p.vol}</td>
+      <td>${isNewBiz ? '<span class="sb sb-no">Nein</span>' : tpBadge(p.tp)}</td>
+      <td style="font-size:11px;color:${p.tp==='yes'?'var(--green)':p.tp==='part'?'var(--amber)':'var(--hint)'}">${isNewBiz?'\u2014':p.mods}</td>
+      <td>${matchBadge(p.match)}</td>
+    </tr>`).join('');
+
+  // gap box
+  document.getElementById('demo-gap-box').innerHTML = `<div class="ib-l">KI-Gap-Analyse</div><div class="ib-t">${mt.gap}</div><div class="ib-s">Kombiniert: DTAD + Building Radar Projektdaten + TP Platform API Modulstatus + OpenAI</div>`;
+
+  // questions
+  document.getElementById('demo-questions').innerHTML = mt.questions.map((q,i) => `
+    <div class="qi" style="border-left-color:var(--${i===0?'red':i===1?'amber':i===2?'blue2':'purple'})">
+      <strong style="color:var(--hint);font-size:11px">${i+1}.</strong> ${q.t}
+      <div style="font-size:10px;color:var(--hint);margin-top:4px">${q.s}</div>
+    </div>`).join('');
+}
+</script>
+</body>
+</html>
